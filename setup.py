@@ -23,7 +23,7 @@ setup(
         "Operating System :: OS Independent",
     ],
     license="MIT",
-    python_requires=">=3.8",
+    python_requires=">=3.9",
     install_requires=[
         "numpy>=1.24.0",
         "pandas>=2.0.0",
