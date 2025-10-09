@@ -2,9 +2,9 @@ name: Tests
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
   pull_request:
-    branches: [ main ]
+    branches: [main]
   # Allow manual trigger
   workflow_dispatch:
 
@@ -13,165 +13,165 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ['3.8', '3.9', '3.10', '3.11', '3.12']
+        python-version: ["3.8", "3.9", "3.10", "3.11", "3.12"]
       fail-fast: false
 
     steps:
-    - uses: actions/checkout@v4
-    
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v4
-      with:
-        python-version: ${{ matrix.python-version }}
-        cache: 'pip'
-    
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        
-        # Install test dependencies
-        pip install pytest pytest-cov pytest-xvfb
-        
-        # Install package dependencies (match setup.py requirements)
-        pip install numpy>=1.24.0 pandas>=2.0.0 scikit-learn>=1.3.0
-        
-        # Install optional dependencies for visualization tests
-        pip install matplotlib seaborn || echo "Optional viz dependencies failed, continuing..."
-        
-        # Install package in editable mode
-        pip install -e .
-    
-    - name: Lint with basic checks
-      run: |
-        # Check for basic Python syntax errors
-        python -m py_compile extended_sklearn_metrics/*.py
-        echo "✅ Basic syntax check passed"
-    
-    - name: Test import
-      run: |
-        python -c "
-        import extended_sklearn_metrics
-        print(f'✅ Package version: {extended_sklearn_metrics.__version__}')
-        
-        # Test key imports
-        from extended_sklearn_metrics import final_model_evaluation
-        from extended_sklearn_metrics import evaluate_model_with_cross_validation
-        print('✅ Key functions imported successfully')
-        "
-    
-    - name: Run tests
-      run: |
-        # Create tests directory if it doesn't exist
-        mkdir -p tests
-        
-        # Run simple test if tests exist, otherwise run import test
-        if [ -f "tests/test_*.py" ] || [ -d "tests" ] && [ "$(ls -A tests/)" ]; then
-          echo "📝 Running pytest..."
-          pytest tests/ -v --cov=extended_sklearn_metrics --cov-report=xml --cov-report=term
-        else
-          echo "📝 No tests found, running basic functionality test..."
+      - uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: "pip"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+
+          # Install test dependencies
+          pip install pytest pytest-cov pytest-xvfb
+
+          # Install package dependencies (match setup.py requirements)
+          pip install numpy>=1.24.0 pandas>=2.0.0 scikit-learn>=1.3.0 scipy>=1.9.0 matplotlib>=3.5.0
+
+          # Install optional visualization dependencies
+          pip install seaborn || echo "Optional seaborn dependency failed, continuing..."
+
+          # Install package in editable mode
+          pip install -e .
+
+      - name: Lint with basic checks
+        run: |
+          # Check for basic Python syntax errors
+          python -m py_compile extended_sklearn_metrics/*.py
+          echo "✅ Basic syntax check passed"
+
+      - name: Test import
+        run: |
           python -c "
-          # Basic functionality test
+          import extended_sklearn_metrics
+          print(f'✅ Package version: {extended_sklearn_metrics.__version__}')
+
+          # Test key imports
+          from extended_sklearn_metrics import final_model_evaluation
+          from extended_sklearn_metrics import evaluate_model_with_cross_validation
+          print('✅ Key functions imported successfully')
+          "
+
+      - name: Run tests
+        run: |
+          # Create tests directory if it doesn't exist
+          mkdir -p tests
+
+          # Run simple test if tests exist, otherwise run import test
+          if [ -f "tests/test_*.py" ] || [ -d "tests" ] && [ "$(ls -A tests/)" ]; then
+            echo "📝 Running pytest..."
+            pytest tests/ -v --cov=extended_sklearn_metrics --cov-report=xml --cov-report=term
+          else
+            echo "📝 No tests found, running basic functionality test..."
+            python -c "
+            # Basic functionality test
+            import numpy as np
+            import pandas as pd
+            from sklearn.ensemble import RandomForestClassifier
+            from sklearn.datasets import make_classification
+            from sklearn.model_selection import train_test_split
+            from extended_sklearn_metrics import final_model_evaluation
+
+            print('🧪 Running basic functionality test...')
+
+            # Create sample data
+            X, y = make_classification(n_samples=100, n_features=5, random_state=42)
+            X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+            # Train model
+            model = RandomForestClassifier(n_estimators=10, random_state=42)
+            model.fit(X_train, y_train)
+
+            # Test evaluation with warning suppression
+            results = final_model_evaluation(
+                model=model,
+                X_train=X_train,
+                y_train=y_train,
+                X_test=X_test,
+                y_test=y_test,
+                task_type='classification',
+                cv_folds=3,
+                suppress_warnings=True,
+                random_state=42
+            )
+
+            assert 'performance' in results
+            assert 'task_type' in results
+            assert results['task_type'] == 'classification'
+            print('✅ Basic functionality test passed!')
+            "
+          fi
+
+      - name: Test edge cases
+        run: |
+          python -c "
+          # Test edge cases that were causing AttributeErrors
           import numpy as np
           import pandas as pd
-          from sklearn.ensemble import RandomForestClassifier
+          from sklearn.tree import DecisionTreeClassifier
           from sklearn.datasets import make_classification
-          from sklearn.model_selection import train_test_split
           from extended_sklearn_metrics import final_model_evaluation
-          
-          print('🧪 Running basic functionality test...')
-          
-          # Create sample data
-          X, y = make_classification(n_samples=100, n_features=5, random_state=42)
-          X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-          
-          # Train model
-          model = RandomForestClassifier(n_estimators=10, random_state=42)
-          model.fit(X_train, y_train)
-          
-          # Test evaluation with warning suppression
-          results = final_model_evaluation(
-              model=model,
-              X_train=X_train,
-              y_train=y_train,
-              X_test=X_test,
-              y_test=y_test,
-              task_type='classification',
-              cv_folds=3,
+
+          print('🧪 Testing edge cases...')
+
+          # Test with minimal data (previous error case)
+          X_small, y_small = make_classification(n_samples=3, n_features=2, random_state=42)
+          model_small = DecisionTreeClassifier(random_state=42)
+          model_small.fit(X_small, y_small)
+
+          results_small = final_model_evaluation(
+              model=model_small,
+              X_train=X_small[:2],
+              y_train=y_small[:2],
+              X_test=X_small[2:],
+              y_test=y_small[2:],
               suppress_warnings=True,
               random_state=42
           )
-          
-          assert 'performance' in results
-          assert 'task_type' in results
-          assert results['task_type'] == 'classification'
-          print('✅ Basic functionality test passed!')
+
+          print('✅ Small dataset test passed!')
+
+          # Test with single feature
+          X_single = X_small[:, :1]
+          model_single = DecisionTreeClassifier(random_state=42)
+          model_single.fit(X_single, y_small)
+
+          results_single = final_model_evaluation(
+              model=model_single,
+              X_train=X_single[:2],
+              y_train=y_small[:2],
+              X_test=X_single[2:],
+              y_test=y_small[2:],
+              suppress_warnings=True,
+              random_state=42
+          )
+
+          print('✅ Single feature test passed!')
+          print('✅ All edge case tests passed!')
           "
-        fi
-    
-    - name: Test edge cases
-      run: |
-        python -c "
-        # Test edge cases that were causing AttributeErrors
-        import numpy as np
-        import pandas as pd
-        from sklearn.tree import DecisionTreeClassifier
-        from sklearn.datasets import make_classification
-        from extended_sklearn_metrics import final_model_evaluation
-        
-        print('🧪 Testing edge cases...')
-        
-        # Test with minimal data (previous error case)
-        X_small, y_small = make_classification(n_samples=3, n_features=2, random_state=42)
-        model_small = DecisionTreeClassifier(random_state=42)
-        model_small.fit(X_small, y_small)
-        
-        results_small = final_model_evaluation(
-            model=model_small,
-            X_train=X_small[:2],
-            y_train=y_small[:2], 
-            X_test=X_small[2:],
-            y_test=y_small[2:],
-            suppress_warnings=True,
-            random_state=42
-        )
-        
-        print('✅ Small dataset test passed!')
-        
-        # Test with single feature
-        X_single = X_small[:, :1]
-        model_single = DecisionTreeClassifier(random_state=42)
-        model_single.fit(X_single, y_small)
-        
-        results_single = final_model_evaluation(
-            model=model_single,
-            X_train=X_single[:2],
-            y_train=y_small[:2],
-            X_test=X_single[2:],
-            y_test=y_small[2:],
-            suppress_warnings=True,
-            random_state=42
-        )
-        
-        print('✅ Single feature test passed!')
-        print('✅ All edge case tests passed!')
-        "
-    
-    - name: Upload coverage reports to Codecov
-      if: matrix.python-version == '3.9'
-      uses: codecov/codecov-action@v3
-      with:
-        file: ./coverage.xml
-        fail_ci_if_error: false
-      env:
-        CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
-    
-    - name: Test Summary
-      if: always()
-      run: |
-        echo "🐍 Python ${{ matrix.python-version }} testing completed"
-        if [ "${{ job.status }}" = "success" ]; then
-          echo "✅ All tests passed!"
-        else
-          echo "❌ Some tests failed"
-        fi
+
+      - name: Upload coverage reports to Codecov
+        if: matrix.python-version == '3.9'
+        uses: codecov/codecov-action@v3
+        with:
+          file: ./coverage.xml
+          fail_ci_if_error: false
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
+      - name: Test Summary
+        if: always()
+        run: |
+          echo "🐍 Python ${{ matrix.python-version }} testing completed"
+          if [ "${{ job.status }}" = "success" ]; then
+            echo "✅ All tests passed!"
+          else
+            echo "❌ Some tests failed"
+          fi

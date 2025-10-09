@@ -24,5 +24,11 @@ setup(
     ],
     license="MIT",
     python_requires=">=3.8",
-    install_requires=["numpy>=1.24.0", "pandas>=2.0.0", "scikit-learn>=1.3.0"],
+    install_requires=[
+        "numpy>=1.24.0",
+        "pandas>=2.0.0",
+        "scikit-learn>=1.3.0",
+        "scipy>=1.9.0",
+        "matplotlib>=3.5.0",
+    ],
 )
