@@ -6,7 +6,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setup(
     name="extended-sklearn-metrics",
-    version="0.3.5",
+    version="0.4.0",
     author="Subashanan Nair",
     author_email="subashnair12@gmail.com",
     description="Comprehensive evaluation library for scikit-learn models with advanced metrics, custom thresholds, and visualizations",
@@ -24,9 +24,5 @@ setup(
     ],
     license="MIT",
     python_requires=">=3.8",
-    install_requires=[
-        "numpy>=1.24.0",
-        "pandas>=2.0.0",
-        "scikit-learn>=1.3.0"
-    ],
-) 
+    install_requires=["numpy>=1.24.0", "pandas>=2.0.0", "scikit-learn>=1.3.0"],
+)

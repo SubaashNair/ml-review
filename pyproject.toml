@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "extended-sklearn-metrics"
-version = "0.3.5"
+version = "0.4.0"
 description = "Comprehensive evaluation library for scikit-learn models with advanced metrics, custom thresholds, and visualizations"
 readme = "README.md"
 authors = [
@@ -24,4 +24,4 @@ dependencies = [
 
 [project.urls]
 "Homepage" = "https://github.com/subashanannair/extended-sklearn-metrics"
-"Bug Tracker" = "https://github.com/subashanannair/extended-sklearn-metrics/issues" 
+"Bug Tracker" = "https://github.com/subashanannair/extended-sklearn-metrics/issues"
