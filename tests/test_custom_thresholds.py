@@ -3,7 +3,8 @@ import numpy as np
 import pandas as pd
 from sklearn.linear_model import LinearRegression
 from sklearn.datasets import make_regression
-from extended_sklearn_metrics import evaluate_model_with_cross_validation, CustomThresholds
+from ml_review.evaluation import Thresholds as CustomThresholds
+from ml_review.evaluation import regression_cv as evaluate_model_with_cross_validation
 
 
 class TestCustomThresholds:

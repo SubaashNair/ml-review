@@ -7,14 +7,23 @@ from sklearn.datasets import make_classification
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 
-from extended_sklearn_metrics import (
-    calculate_roc_metrics,
-    calculate_multiclass_roc_metrics,
-    calculate_precision_recall_metrics,
-    find_optimal_thresholds,
-    create_threshold_analysis_report,
-    print_roc_auc_summary
-)
+from ml_review.metrics import roc
+
+calculate_roc_metrics = roc.binary
+calculate_multiclass_roc_metrics = roc.multiclass
+calculate_precision_recall_metrics = roc.precision_recall
+
+
+def find_optimal_thresholds(result, **kwargs):
+    return result.thresholds(**kwargs)
+
+
+def create_threshold_analysis_report(result, pr_result=None):
+    return result.report(pr_result)
+
+
+def print_roc_auc_summary(result, pr_result=None):
+    return result.print_summary(pr_result)
 
 
 class TestROCAUCAnalysis:

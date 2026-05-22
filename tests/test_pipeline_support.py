@@ -7,7 +7,7 @@ from sklearn.datasets import make_regression
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler, PolynomialFeatures, OneHotEncoder
 from sklearn.compose import ColumnTransformer
-from extended_sklearn_metrics import evaluate_model_with_cross_validation
+from ml_review.evaluation import regression_cv as evaluate_model_with_cross_validation
 
 
 class TestPipelineSupport:

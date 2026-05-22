@@ -33,3 +33,8 @@ shap = [
 [project.urls]
 "Homepage" = "https://github.com/subashanannair/extended-sklearn-metrics"
 "Bug Tracker" = "https://github.com/subashanannair/extended-sklearn-metrics/issues"
+
+[tool.pytest.ini_options]
+filterwarnings = [
+    "ignore:datetime\\.datetime\\.utcfromtimestamp\\(\\) is deprecated.*:DeprecationWarning:dateutil\\.tz\\.tz",
+]

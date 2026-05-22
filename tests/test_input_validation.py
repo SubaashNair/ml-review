@@ -4,7 +4,7 @@ import pandas as pd
 from sklearn.linear_model import LinearRegression
 from sklearn.datasets import make_regression
 from sklearn.svm import SVC  # Classification model for testing warnings
-from extended_sklearn_metrics import evaluate_model_with_cross_validation
+from ml_review.evaluation import regression_cv as evaluate_model_with_cross_validation
 import warnings
 
 

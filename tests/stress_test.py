@@ -10,12 +10,13 @@ import os
 # Add parent directory to path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from extended_sklearn_metrics import (
-    evaluate_model_with_cross_validation,
-    evaluate_classification_model_with_cross_validation,
-    final_model_evaluation,
-    CustomThresholds
-)
+from ml_review import evaluate
+from ml_review.evaluation import Thresholds, classification_cv, regression_cv
+
+evaluate_model_with_cross_validation = regression_cv
+evaluate_classification_model_with_cross_validation = classification_cv
+final_model_evaluation = evaluate
+CustomThresholds = Thresholds
 
 def stress_test_regression():
     print("--- Stress Testing Regression ---")

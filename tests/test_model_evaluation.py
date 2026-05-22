@@ -3,7 +3,7 @@ import numpy as np
 import pandas as pd
 from sklearn.linear_model import LinearRegression
 from sklearn.datasets import make_regression
-from extended_sklearn_metrics import evaluate_model_with_cross_validation
+from ml_review.evaluation import regression_cv as evaluate_model_with_cross_validation
 
 @pytest.fixture
 def test_data():
@@ -125,4 +125,4 @@ def test_target_range_calculation(test_data):
     rmse_idx = result['Metric'] == 'RMSE'
     calculation = result.loc[rmse_idx, 'Calculation'].iloc[0]
     
-    assert f'{expected_range:.2f}' in calculation 
+    assert f'{expected_range:.2f}' in calculation

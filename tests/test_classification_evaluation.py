@@ -5,7 +5,9 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.svm import SVC
 from sklearn.datasets import make_classification
-from extended_sklearn_metrics import evaluate_classification_model_with_cross_validation
+from ml_review.evaluation import (
+    classification_cv as evaluate_classification_model_with_cross_validation,
+)
 
 
 class TestClassificationEvaluation:

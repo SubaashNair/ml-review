@@ -5,11 +5,17 @@ from sklearn.linear_model import LinearRegression
 from sklearn.datasets import make_regression
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
-from extended_sklearn_metrics import (
-    calculate_residual_diagnostics,
-    create_residual_summary_report,
-    print_residual_diagnostics_report
-)
+from ml_review.diagnostics import residual
+
+calculate_residual_diagnostics = residual.calculate
+
+
+def create_residual_summary_report(result):
+    return result.report()
+
+
+def print_residual_diagnostics_report(result):
+    return result.print_report()
 
 
 class TestResidualDiagnostics:
