@@ -5,7 +5,7 @@ from sklearn.metrics import make_scorer, precision_score, recall_score, f1_score
 from typing import Union, Optional
 import warnings
 
-from .model_evaluation import SklearnEstimator
+from .model_evaluation import SklearnEstimator, CustomThresholds
 from ._validation import validate_sklearn_inputs
 
 
@@ -15,6 +15,7 @@ def evaluate_classification_model_with_cross_validation(
     y: Union[pd.Series, np.ndarray],
     cv: int = 5,
     average: str = "weighted",
+    custom_thresholds: Optional[CustomThresholds] = None,
 ) -> pd.DataFrame:
     """
     Evaluates a classification model using cross-validation and generates a performance summary table.
@@ -32,11 +33,13 @@ def evaluate_classification_model_with_cross_validation(
     average : str, default='weighted'
         Averaging strategy for multiclass/multilabel targets:
         'micro', 'macro', 'weighted', 'samples', or None.
+    custom_thresholds : CustomThresholds, optional
+        Custom thresholds for performance evaluation. If None, uses default thresholds.
 
     Returns
     -------
     pd.DataFrame
-        A summary table containing performance metrics and their interpretations.
+        A summary table containing performance metrics, their interpretations, and variability.
     """
     # Input validation using shared validation utilities
     X_array, y_array = validate_sklearn_inputs(model, X, y, cv, check_y_numeric=False)
@@ -71,65 +74,52 @@ def evaluate_classification_model_with_cross_validation(
         model, X, y, cv=cv, scoring=scoring, return_train_score=False
     )
 
-    # Calculate mean scores
-    accuracy = np.mean(cv_results["test_accuracy"])
-    precision = np.mean(cv_results["test_precision"])
-    recall = np.mean(cv_results["test_recall"])
-    f1 = np.mean(cv_results["test_f1"])
+    # Use custom thresholds if provided, otherwise use defaults
+    if custom_thresholds is None:
+        custom_thresholds = CustomThresholds()
 
     # Define performance categories
     def get_classification_performance(score: float) -> str:
         """Get performance category for classification metrics (0-1 scale)"""
-        if score >= 0.9:
+        t_exc, t_good, t_acc, t_poor = custom_thresholds.classification_thresholds
+        if score >= t_exc:
             return "Excellent"
-        elif score >= 0.8:
+        elif score >= t_good:
             return "Good"
-        elif score >= 0.7:
+        elif score >= t_acc:
             return "Acceptable"
-        elif score >= 0.6:
+        elif score >= t_poor:
             return "Poor"
         else:
             return "Very Poor"
 
     # Prepare results data
-    metrics = ["Accuracy", "Precision", "Recall", "F1-Score"]
-    values = [accuracy, precision, recall, f1]
-    thresholds = [
-        "≥0.9 = Excellent, 0.8-0.9 = Good, 0.7-0.8 = Acceptable, 0.6-0.7 = Poor, <0.6 = Very Poor"
-    ] * 4
-    calculations = [
-        f"{accuracy:.4f} (correctly classified samples / total samples)",
-        f"{precision:.4f} (true positives / predicted positives, {average} average)",
-        f"{recall:.4f} (true positives / actual positives, {average} average)",
-        f"{f1:.4f} (harmonic mean of precision and recall, {average} average)",
+    metrics_to_report = [
+        ("Accuracy", "accuracy", "correctly classified samples / total samples"),
+        ("Precision", "precision", f"true positives / predicted positives, {average} average"),
+        ("Recall", "recall", f"true positives / actual positives, {average} average"),
+        ("F1-Score", "f1", f"harmonic mean of precision and recall, {average} average"),
     ]
-    performances = [
-        get_classification_performance(accuracy),
-        get_classification_performance(precision),
-        get_classification_performance(recall),
-        get_classification_performance(f1),
-    ]
-
-    # Add ROC AUC for binary classification
+    
     if is_binary:
-        roc_auc = np.mean(cv_results["test_roc_auc"])
-        metrics.append("ROC AUC")
-        values.append(roc_auc)
-        thresholds.append(
-            "≥0.9 = Excellent, 0.8-0.9 = Good, 0.7-0.8 = Acceptable, 0.6-0.7 = Poor, <0.6 = Very Poor"
-        )
-        calculations.append(f"{roc_auc:.4f} (area under ROC curve)")
-        performances.append(get_classification_performance(roc_auc))
+        metrics_to_report.append(("ROC AUC", "roc_auc", "area under ROC curve"))
 
-    # Create results DataFrame
-    results = pd.DataFrame(
-        {
-            "Metric": metrics,
-            "Value": values,
-            "Threshold": thresholds,
-            "Calculation": calculations,
-            "Performance": performances,
-        }
-    )
+    results_list = []
+    t_exc, t_good, t_acc, t_poor = custom_thresholds.classification_thresholds
+    thresh_desc = f"≥{t_exc} = Excellent, {t_good}-{t_exc} = Good, {t_acc}-{t_good} = Acceptable, {t_poor}-{t_acc} = Poor, <{t_poor} = Very Poor"
 
-    return results
+    for display_name, internal_key, calc_info in metrics_to_report:
+        scores = cv_results[f"test_{internal_key}"]
+        mean = np.mean(scores)
+        std = np.std(scores)
+        
+        results_list.append({
+            "Metric": display_name,
+            "Value": mean,
+            "Std Dev": std,
+            "Threshold": thresh_desc,
+            "Calculation": f"{mean:.4f} ({calc_info})",
+            "Performance": get_classification_performance(mean)
+        })
+
+    return pd.DataFrame(results_list)

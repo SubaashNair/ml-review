@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.4.0] - 2025-01-XX
 
+### MLReview Foundation
+
+- Renamed the published distribution to `ml-review` and added the canonical
+  `ml_review` import package.
+- Added the compact namespace API, DataFrame-first result objects, migration
+  documentation, and a warning-bearing `extended_sklearn_metrics`
+  compatibility path.
+- Added optional SHAP feature importance, serialized SHAP explanation data, and
+  SHAP report and plot helpers behind the `ml-review[shap]` extra.
+- Added `ROADMAP.md` to track later calibration, unsupervised review,
+  inspection, fairness-check, and report-artifact phases.
+
 ### Major Refactoring - Improved Architecture and Performance
 
 This release includes significant architectural improvements focused on code quality, maintainability, and performance while maintaining 100% backward compatibility.

@@ -47,14 +47,14 @@ jobs:
           VERSION="${{ inputs.version }}"
         else
           # Extract from __init__.py
-          VERSION=$(grep -oP '__version__:\s*str\s*=\s*"\K[^"]+' extended_sklearn_metrics/__init__.py)
+          VERSION=$(grep -oP '__version__:\s*str\s*=\s*"\K[^"]+' ml_review/__init__.py)
         fi
         echo "version=$VERSION" >> $GITHUB_OUTPUT
         echo "Publishing version: $VERSION"
 
     - name: Verify version consistency
       run: |
-        INIT_VERSION=$(grep -oP '__version__:\s*str\s*=\s*"\K[^"]+' extended_sklearn_metrics/__init__.py)
+        INIT_VERSION=$(grep -oP '__version__:\s*str\s*=\s*"\K[^"]+' ml_review/__init__.py)
         SETUP_VERSION=$(grep -oP 'version\s*=\s*"\K[^"]+' setup.py)
         PYPROJECT_VERSION=$(grep -oP 'version\s*=\s*"\K[^"]+' pyproject.toml)
         
@@ -77,7 +77,7 @@ jobs:
       run: |
         echo "Checking if version ${{ steps.extract_version.outputs.version }} exists on PyPI..."
         
-        if pip index versions extended-sklearn-metrics 2>/dev/null | grep -q "Available versions.*${{ steps.extract_version.outputs.version }}"; then
+        if pip index versions ml-review 2>/dev/null | grep -q "Available versions.*${{ steps.extract_version.outputs.version }}"; then
           echo "exists=true" >> $GITHUB_OUTPUT
           echo "❌ Version ${{ steps.extract_version.outputs.version }} already exists on PyPI"
         else
@@ -125,7 +125,7 @@ jobs:
         ATTEMPT=1
         
         while [ $ATTEMPT -le $MAX_ATTEMPTS ]; do
-          if pip index versions extended-sklearn-metrics 2>/dev/null | grep -q "${{ steps.extract_version.outputs.version }}"; then
+          if pip index versions ml-review 2>/dev/null | grep -q "${{ steps.extract_version.outputs.version }}"; then
             echo "✅ Version ${{ steps.extract_version.outputs.version }} successfully published to PyPI!"
             break
           else
@@ -150,7 +150,7 @@ jobs:
           
           This release has been automatically published to PyPI.
           
-          Install with: `pip install extended-sklearn-metrics==${{ steps.extract_version.outputs.version }}`
+          Install with: `pip install ml-review==${{ steps.extract_version.outputs.version }}`
           
           ### Changes
           See [CHANGELOG](https://github.com/SubaashNair/extended-sklearn-metrics/blob/main/README.md#version-history) for details.

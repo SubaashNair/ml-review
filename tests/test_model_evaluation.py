@@ -32,7 +32,7 @@ def test_output_format(test_data):
     )
     
     # Check DataFrame structure
-    expected_columns = ['Metric', 'Value', 'Threshold', 'Calculation', 'Performance']
+    expected_columns = ['Metric', 'Value', 'Std Dev', 'Threshold', 'Calculation', 'Performance']
     assert list(result.columns) == expected_columns
     
     # Check metrics are present

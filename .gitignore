@@ -36,6 +36,13 @@ env/
 *.swo
 .DS_Store
 
+# Local agent and worktree artifacts
+.air/
+.claude/
+.junie/
+.worktrees/
+GEMINI.md
+
 # Jupyter Notebook
 .ipynb_checkpoints
 

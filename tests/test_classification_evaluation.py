@@ -54,9 +54,8 @@ class TestClassificationEvaluation:
         )
         
         # Check DataFrame structure
-        expected_columns = ['Metric', 'Value', 'Threshold', 'Calculation', 'Performance']
-        assert list(result.columns) == expected_columns
-        
+        expected_columns = ['Metric', 'Value', 'Std Dev', 'Threshold', 'Calculation', 'Performance']
+        assert list(result.columns) == expected_columns        
         # Check metrics are present (binary should include ROC AUC)
         expected_metrics = ['Accuracy', 'Precision', 'Recall', 'F1-Score', 'ROC AUC']
         assert list(result['Metric']) == expected_metrics
@@ -74,9 +73,8 @@ class TestClassificationEvaluation:
         )
         
         # Check DataFrame structure
-        expected_columns = ['Metric', 'Value', 'Threshold', 'Calculation', 'Performance']
-        assert list(result.columns) == expected_columns
-        
+        expected_columns = ['Metric', 'Value', 'Std Dev', 'Threshold', 'Calculation', 'Performance']
+        assert list(result.columns) == expected_columns        
         # Check metrics are present (multiclass should NOT include ROC AUC)
         expected_metrics = ['Accuracy', 'Precision', 'Recall', 'F1-Score']
         assert list(result['Metric']) == expected_metrics

@@ -9,27 +9,32 @@ from ._validation import validate_sklearn_inputs
 
 
 class CustomThresholds:
-    """Class to define custom performance thresholds"""
+    """Class to define custom performance thresholds for regression and classification"""
 
     def __init__(
         self,
+        # Regression thresholds
         error_thresholds: Tuple[float, float, float] = (10, 20, 30),
         score_thresholds: Tuple[float, float] = (0.5, 0.7),
+        # Classification thresholds
+        classification_thresholds: Tuple[float, float, float, float] = (0.9, 0.8, 0.7, 0.6),
     ):
         """
         Parameters
         ----------
         error_thresholds : tuple of 3 floats
-            Thresholds for error metrics (RMSE, MAE) as percentages.
+            Thresholds for regression error metrics (RMSE, MAE) as percentages.
             Format: (excellent_threshold, good_threshold, moderate_threshold)
-            Values above moderate_threshold are considered "Poor"
         score_thresholds : tuple of 2 floats
-            Thresholds for score metrics (R², Explained Variance).
+            Thresholds for regression score metrics (R², Explained Variance).
             Format: (poor_threshold, good_threshold)
-            Scores below poor_threshold are "Poor", above good_threshold are "Good"
+        classification_thresholds : tuple of 4 floats
+            Thresholds for classification metrics (Accuracy, F1, etc.).
+            Format: (excellent, good, acceptable, poor)
         """
         self.error_thresholds = error_thresholds
         self.score_thresholds = score_thresholds
+        self.classification_thresholds = classification_thresholds
 
 
 class SklearnEstimator(Protocol):
@@ -71,7 +76,7 @@ def evaluate_model_with_cross_validation(
     Returns
     -------
     pd.DataFrame
-        A summary table containing performance metrics and their interpretations.
+        A summary table containing performance metrics, their interpretations, and variability.
     """
     # Input validation using shared validation utilities
     X_array, y_array = validate_sklearn_inputs(model, X, y, cv, check_y_numeric=True)
@@ -114,15 +119,32 @@ def evaluate_model_with_cross_validation(
         model, X, y, cv=cv, scoring=scoring, return_train_score=False
     )
 
-    # Calculate mean scores
-    rmse = -np.mean(cv_results["test_neg_root_mean_squared_error"])
-    mae = -np.mean(cv_results["test_neg_mean_absolute_error"])
-    r2 = np.mean(cv_results["test_r2"])
-    exp_var = np.mean(cv_results["test_explained_variance"])
-
-    # Calculate error percentages
-    rmse_percentage = (rmse / target_range) * 100
-    mae_percentage = (mae / target_range) * 100
+    # Calculate mean and std scores
+    metrics_data = []
+    
+    # RMSE
+    rmse_scores = -cv_results["test_neg_root_mean_squared_error"]
+    rmse_mean = np.mean(rmse_scores)
+    rmse_std = np.std(rmse_scores)
+    metrics_data.append(("RMSE", rmse_mean, rmse_std))
+    
+    # MAE
+    mae_scores = -cv_results["test_neg_mean_absolute_error"]
+    mae_mean = np.mean(mae_scores)
+    mae_std = np.std(mae_scores)
+    metrics_data.append(("MAE", mae_mean, mae_std))
+    
+    # R2
+    r2_scores = cv_results["test_r2"]
+    r2_mean = np.mean(r2_scores)
+    r2_std = np.std(r2_scores)
+    metrics_data.append(("R²", r2_mean, r2_std))
+    
+    # Explained Variance
+    ev_scores = cv_results["test_explained_variance"]
+    ev_mean = np.mean(ev_scores)
+    ev_std = np.std(ev_scores)
+    metrics_data.append(("Explained Variance", ev_mean, ev_std))
 
     # Use custom thresholds if provided, otherwise use defaults
     if custom_thresholds is None:
@@ -150,29 +172,25 @@ def evaluate_model_with_cross_validation(
             return "Poor"
 
     # Create results DataFrame
-    results = pd.DataFrame(
-        {
-            "Metric": ["RMSE", "MAE", "R²", "Explained Variance"],
-            "Value": [rmse, mae, r2, exp_var],
-            "Threshold": [
-                f"<{custom_thresholds.error_thresholds[0]}% = Excellent, {custom_thresholds.error_thresholds[0]}-{custom_thresholds.error_thresholds[1]}% = Good, {custom_thresholds.error_thresholds[1]}-{custom_thresholds.error_thresholds[2]}% = Moderate, >{custom_thresholds.error_thresholds[2]}% = Poor",
-                f"<{custom_thresholds.error_thresholds[0]}% = Excellent, {custom_thresholds.error_thresholds[0]}-{custom_thresholds.error_thresholds[1]}% = Good, {custom_thresholds.error_thresholds[1]}-{custom_thresholds.error_thresholds[2]}% = Moderate, >{custom_thresholds.error_thresholds[2]}% = Poor",
-                f"> {custom_thresholds.score_thresholds[1]} = Good, {custom_thresholds.score_thresholds[0]}–{custom_thresholds.score_thresholds[1]} = Acceptable, < {custom_thresholds.score_thresholds[0]} = Poor",
-                f"> {custom_thresholds.score_thresholds[1]} = Good, {custom_thresholds.score_thresholds[0]}–{custom_thresholds.score_thresholds[1]} = Acceptable, < {custom_thresholds.score_thresholds[0]} = Poor",
-            ],
-            "Calculation": [
-                f"{rmse:.4f} / {target_range:.2f} * 100 ≈ {rmse_percentage:.2f}%",
-                f"{mae:.4f} / {target_range:.2f} * 100 ≈ {mae_percentage:.2f}%",
-                "N/A (unitless)",
-                "N/A (unitless)",
-            ],
-            "Performance": [
-                get_error_performance(rmse_percentage),
-                get_error_performance(mae_percentage),
-                get_score_performance(r2),
-                get_score_performance(exp_var),
-            ],
-        }
-    )
+    results_list = []
+    for metric_name, mean, std in metrics_data:
+        if metric_name in ["RMSE", "MAE"]:
+            percentage = (mean / target_range) * 100
+            perf = get_error_performance(percentage)
+            thresh_desc = f"<{custom_thresholds.error_thresholds[0]}% = Excellent, {custom_thresholds.error_thresholds[0]}-{custom_thresholds.error_thresholds[1]}% = Good, {custom_thresholds.error_thresholds[1]}-{custom_thresholds.error_thresholds[2]}% = Moderate, >{custom_thresholds.error_thresholds[2]}% = Poor"
+            calc_desc = f"{mean:.4f} / {target_range:.2f} * 100 ≈ {percentage:.2f}%"
+        else:
+            perf = get_score_performance(mean)
+            thresh_desc = f"> {custom_thresholds.score_thresholds[1]} = Good, {custom_thresholds.score_thresholds[0]}–{custom_thresholds.score_thresholds[1]} = Acceptable, < {custom_thresholds.score_thresholds[0]} = Poor"
+            calc_desc = "N/A (unitless)"
+            
+        results_list.append({
+            "Metric": metric_name,
+            "Value": mean,
+            "Std Dev": std,
+            "Threshold": thresh_desc,
+            "Calculation": calc_desc,
+            "Performance": perf
+        })
 
-    return results
+    return pd.DataFrame(results_list)

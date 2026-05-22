@@ -5,11 +5,11 @@ with open("README.md", "r", encoding="utf-8") as fh:
     long_description = fh.read()
 
 setup(
-    name="extended-sklearn-metrics",
+    name="ml-review",
     version="0.4.0",
     author="Subashanan Nair",
     author_email="subashnair12@gmail.com",
-    description="Comprehensive evaluation library for scikit-learn models with advanced metrics, custom thresholds, and visualizations",
+    description="MLReview model evaluation, inspection, diagnostics, and reporting for scikit-learn estimators",
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/subashanannair/extended-sklearn-metrics",
@@ -17,6 +17,7 @@ setup(
     include_package_data=True,
     package_data={
         "extended_sklearn_metrics": ["*.py"],
+        "ml_review": ["*.py"],
     },
     classifiers=[
         "Programming Language :: Python :: 3",
@@ -31,4 +32,10 @@ setup(
         "scipy>=1.9.0",
         "matplotlib>=3.5.0",
     ],
+    extras_require={
+        "shap": [
+            "shap>=0.44,<0.50; python_version < '3.11'",
+            "shap>=0.50; python_version >= '3.11'",
+        ],
+    },
 )
