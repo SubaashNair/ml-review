@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "ml-review"
-version = "0.4.0"
+version = "0.4.1"
 description = "MLReview model evaluation, inspection, diagnostics, and reporting for scikit-learn estimators"
 readme = "README.md"
 authors = [

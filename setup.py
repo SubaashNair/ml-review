@@ -6,7 +6,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setup(
     name="ml-review",
-    version="0.4.0",
+    version="0.4.1",
     author="Subashanan Nair",
     author_email="subashnair12@gmail.com",
     description="MLReview model evaluation, inspection, diagnostics, and reporting for scikit-learn estimators",

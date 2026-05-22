@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.4.0] - 2025-01-XX
+## [0.4.1] - 2026-05-22
 
 ### MLReview Foundation
 
@@ -18,6 +18,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   SHAP report and plot helpers behind the `ml-review[shap]` extra.
 - Added `ROADMAP.md` to track later calibration, unsupervised review,
   inspection, fairness-check, and report-artifact phases.
+
+## [0.4.0] - 2025-01-XX
 
 ### Major Refactoring - Improved Architecture and Performance
 

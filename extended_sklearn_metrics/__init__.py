@@ -9,7 +9,7 @@ warnings.warn(
     stacklevel=2,
 )
 
-__version__: str = "0.4.0"
+__version__: str = "0.4.1"
 
 from .model_evaluation import evaluate_model_with_cross_validation, CustomThresholds
 from .classification_evaluation import (
