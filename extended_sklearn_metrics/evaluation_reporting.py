@@ -69,32 +69,34 @@ def create_evaluation_report(evaluation_results: Dict[str, Any]) -> pd.DataFrame
     if 'feature_importance' in evaluation_results:
         fi = evaluation_results['feature_importance']
         
-        # Get top features from each importance method
-        for importance_type, importance_data in fi.items():
-            if isinstance(importance_data, dict) and 'values' in importance_data:
-                values = importance_data['values']
-                features = importance_data['features']
-                
-                # Get top 3 features
-                if importance_type == 'builtin_importance':
-                    top_indices = np.argsort(values)[-3:][::-1]
-                    for i, idx in enumerate(top_indices):
-                        report_data.append([
-                            'Feature Importance', f'Top {i+1} (Built-in)', 
-                            f"{features[idx]} ({values[idx]:.4f})",
-                            'Built-in feature importance'
-                        ])
-                        
-                elif importance_type == 'permutation_importance':
-                    importances = importance_data.get('importances_mean', [])
-                    if importances:
-                        top_indices = np.argsort(importances)[-3:][::-1]
-                        for i, idx in enumerate(top_indices):
-                            report_data.append([
-                                'Feature Importance', f'Top {i+1} (Permutation)', 
-                                f"{features[idx]} ({importances[idx]:.4f})",
-                                'Permutation feature importance'
-                            ])
+        importance_specs = [
+            ("shap_importance", "values", "SHAP", "Mean absolute SHAP importance"),
+            ("builtin_importance", "values", "Built-in", "Built-in feature importance"),
+            (
+                "permutation_importance",
+                "importances_mean",
+                "Permutation",
+                "Permutation feature importance",
+            ),
+        ]
+        for importance_type, values_key, label, description in importance_specs:
+            importance_data = fi.get(importance_type)
+            if not importance_data:
+                continue
+            values = importance_data.get(values_key, [])
+            features = importance_data.get("features", [])
+            if not values or not features:
+                continue
+            top_indices = np.argsort(values)[-3:][::-1]
+            for i, idx in enumerate(top_indices):
+                report_data.append(
+                    [
+                        "Feature Importance",
+                        f"Top {i+1} ({label})",
+                        f"{features[idx]} ({values[idx]:.4f})",
+                        description,
+                    ]
+                )
     
     # Error Analysis Summary
     if 'error_analysis' in evaluation_results:
@@ -223,8 +225,12 @@ def print_evaluation_summary(evaluation_results: Dict[str, Any]) -> None:
         print("TOP IMPORTANT FEATURES:")
         print("-" * 25)
         
-        # Show permutation importance if available, otherwise built-in
-        if 'permutation_importance' in fi:
+        # Prefer SHAP when available, then permutation, then built-in importance.
+        if 'shap_importance' in fi:
+            importances = fi['shap_importance']['values']
+            features = fi['shap_importance']['features']
+            method = "SHAP"
+        elif 'permutation_importance' in fi:
             importances = fi['permutation_importance']['importances_mean']
             features = fi['permutation_importance']['features']
             method = "Permutation"
@@ -498,6 +504,11 @@ def create_feature_importance_report(evaluation_results: Dict[str, Any]) -> Opti
             builtin_values = fi['builtin_importance']['values']
             if feature_idx < len(builtin_values):
                 row['Built_in_Importance'] = builtin_values[feature_idx]
+
+        if 'shap_importance' in fi:
+            shap_values = fi['shap_importance']['values']
+            if feature_idx < len(shap_values):
+                row['SHAP_Importance'] = shap_values[feature_idx]
         
         # Permutation importance
         if 'permutation_importance' in fi:
@@ -520,12 +531,17 @@ def create_feature_importance_report(evaluation_results: Dict[str, Any]) -> Opti
     # Add rankings
     if 'Built_in_Importance' in df.columns:
         df['Built_in_Rank'] = df['Built_in_Importance'].rank(ascending=False, method='dense')
+
+    if 'SHAP_Importance' in df.columns:
+        df['SHAP_Rank'] = df['SHAP_Importance'].rank(ascending=False, method='dense')
     
     if 'Permutation_Importance' in df.columns:
         df['Permutation_Rank'] = df['Permutation_Importance'].rank(ascending=False, method='dense')
     
     # Sort by most available importance measure
-    if 'Permutation_Importance' in df.columns:
+    if 'SHAP_Importance' in df.columns:
+        df = df.sort_values('SHAP_Importance', ascending=False)
+    elif 'Permutation_Importance' in df.columns:
         df = df.sort_values('Permutation_Importance', ascending=False)
     elif 'Built_in_Importance' in df.columns:
         df = df.sort_values('Built_in_Importance', ascending=False)

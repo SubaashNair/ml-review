@@ -11,7 +11,7 @@ from sklearn.metrics import (
 )
 from sklearn.inspection import permutation_importance
 from sklearn.calibration import calibration_curve
-from typing import Union, Optional, Dict, Any, List, Tuple, TypedDict
+from typing import Union, Optional, Dict, Any, List, Literal, Tuple, TypedDict
 import warnings
 import contextlib
 
@@ -81,7 +81,10 @@ def final_model_evaluation(
     feature_names: Optional[List[str]] = None,
     protected_attributes: Optional[Dict[str, Union[pd.Series, np.ndarray]]] = None,
     random_state: int = 42,
-    suppress_warnings: bool = False
+    suppress_warnings: bool = False,
+    shap_mode: Literal["auto", "on", "off"] = "auto",
+    shap_background_size: int = 100,
+    shap_sample_size: int = 200,
 ) -> EvaluationResults:
     """
     Comprehensive final model evaluation on hold-out test set.
@@ -111,6 +114,12 @@ def final_model_evaluation(
         Random state for reproducibility
     suppress_warnings : bool, default=False
         If True, suppresses sklearn warnings about feature names and other non-critical warnings
+    shap_mode : {'auto', 'on', 'off'}, default='auto'
+        Use optional SHAP explanations automatically, require them, or disable them.
+    shap_background_size : int, default=100
+        Maximum training rows used as the SHAP background sample.
+    shap_sample_size : int, default=200
+        Maximum test rows explained by SHAP.
         
     Returns
     -------
@@ -124,6 +133,11 @@ def final_model_evaluation(
         # Determine task type
         if task_type == 'auto':
             task_type = _detect_task_type(y_train)
+
+        if shap_mode not in {"auto", "on", "off"}:
+            raise ValueError("shap_mode must be one of 'auto', 'on', or 'off'")
+        if shap_background_size <= 0 or shap_sample_size <= 0:
+            raise ValueError("SHAP sample sizes must be positive integers")
         
         # Validate inputs
         _validate_evaluation_inputs(model, X_train, y_train, X_test, y_test)
@@ -163,7 +177,8 @@ def final_model_evaluation(
         # 3. Feature Importance Analysis
         results['feature_importance'] = _analyze_feature_importance(
             model, X_train_array, y_train_array, X_test_array, y_test_array,
-            feature_names, task_type, random_state
+            feature_names, task_type, random_state, shap_mode,
+            shap_background_size, shap_sample_size
         )
         
         # 4. Error Analysis
@@ -327,7 +342,10 @@ def _evaluate_cv_stability(
 def _analyze_feature_importance(
     model, X_train: np.ndarray, y_train: np.ndarray, 
     X_test: np.ndarray, y_test: np.ndarray,
-    feature_names: List[str], task_type: str, random_state: int
+    feature_names: List[str], task_type: str, random_state: int,
+    shap_mode: Literal["auto", "on", "off"] = "auto",
+    shap_background_size: int = 100,
+    shap_sample_size: int = 200,
 ) -> Dict[str, Any]:
     """Analyze feature importance using multiple methods."""
     importance_results = {}
@@ -360,7 +378,30 @@ def _analyze_feature_importance(
     except Exception as e:
         warnings.warn(f"Permutation importance calculation failed: {e}")
     
-    # 3. Feature correlation with target
+    # 3. Optional SHAP importance and local explanation payload.
+    if shap_mode != "off":
+        try:
+            shap_results = _analyze_shap_importance(
+                model,
+                X_train,
+                X_test,
+                feature_names,
+                task_type,
+                random_state,
+                shap_background_size,
+                shap_sample_size,
+            )
+            importance_results.update(shap_results)
+        except ImportError as e:
+            if shap_mode == "on":
+                raise ImportError(
+                    "SHAP explanations require the optional dependency. "
+                    "Install with `pip install ml-review[shap]` or use shap_mode='off'."
+                ) from e
+        except Exception as e:
+            warnings.warn(f"SHAP importance calculation failed: {e}")
+
+    # 4. Feature correlation with target
     try:
         correlations = []
         y_numeric = y_train if task_type == 'regression' else y_train.astype(float)
@@ -378,6 +419,85 @@ def _analyze_feature_importance(
         warnings.warn(f"Feature correlation calculation failed: {e}")
     
     return importance_results
+
+
+def _sample_rows(X: np.ndarray, max_rows: int, random_state: int) -> Tuple[np.ndarray, np.ndarray]:
+    """Return deterministic bounded row samples and their original indices."""
+    if len(X) <= max_rows:
+        indices = np.arange(len(X))
+    else:
+        indices = np.sort(
+            np.random.RandomState(random_state).choice(len(X), size=max_rows, replace=False)
+        )
+    return X[indices], indices
+
+
+def _shap_values_with_feature_axis(values: np.ndarray, n_features: int) -> np.ndarray:
+    """Normalize common SHAP output layouts to samples x features x outputs."""
+    if values.ndim == 1:
+        return values.reshape(1, values.shape[0])
+    if values.ndim == 3 and values.shape[1] != n_features and values.shape[2] == n_features:
+        return np.moveaxis(values, 2, 1)
+    return values
+
+
+def _analyze_shap_importance(
+    model,
+    X_train: np.ndarray,
+    X_test: np.ndarray,
+    feature_names: List[str],
+    task_type: str,
+    random_state: int,
+    background_size: int,
+    sample_size: int,
+) -> Dict[str, Any]:
+    """Calculate bounded model-agnostic SHAP data for reporting and plots."""
+    import shap
+
+    background, _ = _sample_rows(X_train, background_size, random_state)
+    explained_rows, explained_indices = _sample_rows(X_test, sample_size, random_state)
+
+    if task_type == "classification" and hasattr(model, "predict_proba"):
+        prediction_fn = model.predict_proba
+        model_output = "predict_proba"
+        output_names = [str(name) for name in getattr(model, "classes_", [])]
+        predicted_outputs = np.argmax(model.predict_proba(explained_rows), axis=1).tolist()
+    else:
+        prediction_fn = model.predict
+        model_output = "predict"
+        output_names = []
+        predicted_outputs = []
+
+    explanation = shap.Explainer(prediction_fn, background)(explained_rows)
+    values = _shap_values_with_feature_axis(np.asarray(explanation.values), len(feature_names))
+    base_values = np.asarray(explanation.base_values)
+
+    if values.ndim == 2:
+        global_values = np.mean(np.abs(values), axis=0)
+    elif values.ndim == 3:
+        global_values = np.mean(np.abs(values), axis=(0, 2))
+    else:
+        raise ValueError(f"Unsupported SHAP values shape: {values.shape}")
+
+    return {
+        "shap_importance": {
+            "values": global_values.tolist(),
+            "features": feature_names,
+            "model_output": model_output,
+            "sample_count": len(explained_rows),
+            "background_count": len(background),
+        },
+        "shap_explanations": {
+            "values": values.tolist(),
+            "base_values": base_values.tolist(),
+            "feature_values": explained_rows.tolist(),
+            "feature_names": feature_names,
+            "sample_indices": explained_indices.tolist(),
+            "model_output": model_output,
+            "output_names": output_names,
+            "predicted_output_indices": predicted_outputs,
+        },
+    }
 
 
 def _analyze_errors(

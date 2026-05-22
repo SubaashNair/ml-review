@@ -43,7 +43,12 @@ def create_feature_importance_plot(
 
     # Plot 1: Main importance method
     ax1 = axes[0]
-    if "permutation_importance" in fi:
+    if "shap_importance" in fi:
+        importances = fi["shap_importance"]["values"]
+        features = fi["shap_importance"]["features"]
+        errors = None
+        title = "SHAP Importance"
+    elif "permutation_importance" in fi:
         importances = fi["permutation_importance"]["importances_mean"]
         features = fi["permutation_importance"]["features"]
         errors = fi["permutation_importance"].get("importances_std", None)

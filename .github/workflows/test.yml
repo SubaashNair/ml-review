@@ -44,19 +44,18 @@ jobs:
       - name: Lint with basic checks
         run: |
           # Check for basic Python syntax errors
-          python -m py_compile extended_sklearn_metrics/*.py
-          python -m py_compile extended_sklearn_metrics/visualizations/*.py
+          python -m compileall ml_review extended_sklearn_metrics
           echo "✅ Basic syntax check passed"
 
       - name: Test import
         run: |
           python -c "
-          import extended_sklearn_metrics
-          print(f'✅ Package version: {extended_sklearn_metrics.__version__}')
+          import ml_review
+          print(f'✅ Package version: {ml_review.__version__}')
 
           # Test key imports
-          from extended_sklearn_metrics import final_model_evaluation
-          from extended_sklearn_metrics import evaluate_model_with_cross_validation
+          from ml_review import evaluate
+          from ml_review.evaluation import regression_cv
           print('✅ Key functions imported successfully')
           "
 
@@ -68,7 +67,7 @@ jobs:
           # Run simple test if tests exist, otherwise run import test
           if [ -f "tests/test_*.py" ] || [ -d "tests" ] && [ "$(ls -A tests/)" ]; then
             echo "📝 Running pytest..."
-            pytest tests/ -v --cov=extended_sklearn_metrics --cov-report=xml --cov-report=term
+            pytest tests/ -v --cov=ml_review --cov=extended_sklearn_metrics --cov-report=xml --cov-report=term
           else
             echo "📝 No tests found, running basic functionality test..."
             python -c "
@@ -78,7 +77,7 @@ jobs:
             from sklearn.ensemble import RandomForestClassifier
             from sklearn.datasets import make_classification
             from sklearn.model_selection import train_test_split
-            from extended_sklearn_metrics import final_model_evaluation
+            from ml_review import evaluate
 
             print('🧪 Running basic functionality test...')
 
@@ -91,7 +90,7 @@ jobs:
             model.fit(X_train, y_train)
 
             # Test evaluation with warning suppression
-            results = final_model_evaluation(
+            results = evaluate(
                 model=model,
                 X_train=X_train,
                 y_train=y_train,
@@ -118,7 +117,7 @@ jobs:
           import pandas as pd
           from sklearn.tree import DecisionTreeClassifier
           from sklearn.datasets import make_classification
-          from extended_sklearn_metrics import final_model_evaluation
+          from ml_review import evaluate
 
           print('🧪 Testing edge cases...')
 
@@ -127,7 +126,7 @@ jobs:
           model_small = DecisionTreeClassifier(random_state=42)
           model_small.fit(X_small, y_small)
 
-          results_small = final_model_evaluation(
+          results_small = evaluate(
               model=model_small,
               X_train=X_small[:2],
               y_train=y_small[:2],
@@ -144,7 +143,7 @@ jobs:
           model_single = DecisionTreeClassifier(random_state=42)
           model_single.fit(X_single, y_small)
 
-          results_single = final_model_evaluation(
+          results_single = evaluate(
               model=model_single,
               X_train=X_single[:2],
               y_train=y_small[:2],
@@ -176,3 +175,26 @@ jobs:
           else
             echo "❌ Some tests failed"
           fi
+
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install build tooling
+        run: |
+          python -m pip install --upgrade pip
+          pip install build twine
+
+      - name: Build distributions
+        run: python -m build
+
+      - name: Verify distributions
+        run: twine check dist/*

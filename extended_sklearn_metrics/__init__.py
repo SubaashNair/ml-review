@@ -1,6 +1,13 @@
-"""
-extended-sklearn-metrics - A Python package for enhanced scikit-learn model evaluation metrics
-"""
+"""Compatibility imports for the renamed MLReview package."""
+
+import warnings
+
+warnings.warn(
+    "extended_sklearn_metrics is now a compatibility package for MLReview. "
+    "Install `ml-review` and migrate imports to `ml_review`.",
+    FutureWarning,
+    stacklevel=2,
+)
 
 __version__: str = "0.4.0"
 

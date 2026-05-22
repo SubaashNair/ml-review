@@ -89,8 +89,13 @@ def _plot_feature_importance(evaluation_results: Dict[str, Any], ax) -> None:
     """Plot feature importance analysis."""
     fi = evaluation_results["feature_importance"]
 
-    # Use permutation importance if available, otherwise built-in
-    if "permutation_importance" in fi:
+    # Prefer SHAP, then permutation importance, then built-in importance.
+    if "shap_importance" in fi:
+        importances = fi["shap_importance"]["values"]
+        features = fi["shap_importance"]["features"]
+        errors = None
+        title_suffix = "(SHAP)"
+    elif "permutation_importance" in fi:
         importances = fi["permutation_importance"]["importances_mean"]
         features = fi["permutation_importance"]["features"]
         errors = fi["permutation_importance"].get("importances_std", None)
