@@ -17,10 +17,10 @@ jobs:
       fail-fast: false
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python-version }}
           cache: "pip"
@@ -116,13 +116,13 @@ jobs:
           import numpy as np
           import pandas as pd
           from sklearn.tree import DecisionTreeClassifier
-          from sklearn.datasets import make_classification
           from ml_review import evaluate
 
           print('🧪 Testing edge cases...')
 
           # Test with minimal data (previous error case)
-          X_small, y_small = make_classification(n_samples=3, n_features=2, random_state=42)
+          X_small = np.array([[0.0, 0.0], [1.0, 0.0], [1.0, 1.0]])
+          y_small = np.array([0, 1, 1])
           model_small = DecisionTreeClassifier(random_state=42)
           model_small.fit(X_small, y_small)
 
@@ -180,10 +180,10 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v6
         with:
           python-version: "3.12"
           cache: "pip"
