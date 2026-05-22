@@ -11,9 +11,50 @@ from sklearn.metrics import (
 )
 from sklearn.inspection import permutation_importance
 from sklearn.calibration import calibration_curve
-from typing import Union, Optional, Dict, Any, List, Tuple
+from typing import Union, Optional, Dict, Any, List, Tuple, TypedDict
 import warnings
 import contextlib
+
+class PerformanceMetrics(TypedDict, total=False):
+    accuracy: float
+    precision_macro: float
+    recall_macro: float
+    f1_macro: float
+    precision_weighted: float
+    recall_weighted: float
+    f1_weighted: float
+    roc_auc: float
+    class_distribution: Dict[Any, int]
+    mse: float
+    rmse: float
+    mae: float
+    r2: float
+    explained_variance: float
+    mean_residual: float
+    std_residual: float
+    mean_abs_error: float
+    median_abs_error: float
+    max_error: float
+
+class CVMetricStats(TypedDict):
+    mean: float
+    std: float
+    min: float
+    max: float
+    cv: float
+
+class EvaluationResults(TypedDict):
+    task_type: str
+    train_size: int
+    test_size: int
+    n_features: int
+    feature_names: List[str]
+    performance: PerformanceMetrics
+    cv_stability: Dict[str, CVMetricStats]
+    feature_importance: Dict[str, Any]
+    error_analysis: Dict[str, Any]
+    fairness_analysis: Optional[Dict[str, Any]]
+    interpretation: Dict[str, Any]
 
 
 @contextlib.contextmanager
@@ -41,7 +82,7 @@ def final_model_evaluation(
     protected_attributes: Optional[Dict[str, Union[pd.Series, np.ndarray]]] = None,
     random_state: int = 42,
     suppress_warnings: bool = False
-) -> Dict[str, Any]:
+) -> EvaluationResults:
     """
     Comprehensive final model evaluation on hold-out test set.
     
@@ -695,27 +736,11 @@ def _analyze_prediction_confidence(model, X_test: np.ndarray, task_type: str) ->
 
 def _calculate_skewness(data: np.ndarray) -> float:
     """Calculate skewness of data."""
-    try:
-        from scipy import stats
-        return stats.skew(data)
-    except ImportError:
-        # Simple skewness calculation
-        mean = np.mean(data)
-        std = np.std(data)
-        if std == 0:
-            return 0.0
-        return np.mean(((data - mean) / std) ** 3)
+    from scipy import stats
+    return float(stats.skew(data))
 
 
 def _calculate_kurtosis(data: np.ndarray) -> float:
     """Calculate kurtosis of data."""
-    try:
-        from scipy import stats
-        return stats.kurtosis(data)
-    except ImportError:
-        # Simple kurtosis calculation
-        mean = np.mean(data)
-        std = np.std(data)
-        if std == 0:
-            return 0.0
-        return np.mean(((data - mean) / std) ** 4) - 3
+    from scipy import stats
+    return float(stats.kurtosis(data))
