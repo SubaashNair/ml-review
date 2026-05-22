@@ -12,7 +12,7 @@ setup(
     description="MLReview model evaluation, inspection, diagnostics, and reporting for scikit-learn estimators",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/subashanannair/extended-sklearn-metrics",
+    url="https://github.com/SubaashNair/ml-review",
     packages=find_packages(),
     include_package_data=True,
     package_data={

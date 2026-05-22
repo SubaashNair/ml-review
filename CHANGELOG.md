@@ -239,6 +239,6 @@ results = final_model_evaluation(
 
 ## Links
 
-- [GitHub Repository](https://github.com/SubaashNair/extended-sklearn-metrics)
-- [PyPI Package](https://pypi.org/project/extended-sklearn-metrics/)
-- [Issue Tracker](https://github.com/SubaashNair/extended-sklearn-metrics/issues)
+- [GitHub Repository](https://github.com/SubaashNair/ml-review)
+- [PyPI Package](https://pypi.org/project/ml-review/)
+- [Issue Tracker](https://github.com/SubaashNair/ml-review/issues)
